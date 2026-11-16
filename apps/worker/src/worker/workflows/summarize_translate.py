@@ -7,6 +7,19 @@ from mistralai.workflows.client import get_mistral_client
 DEFAULT_MODEL = "mistral-large-latest"
 
 
+def _message_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    parts = []
+    for part in content:
+        if isinstance(part, dict):
+            if part.get("type") == "text":
+                parts.append(part.get("text", ""))
+        elif getattr(part, "type", None) == "text":
+            parts.append(getattr(part, "text", "") or "")
+    return "".join(parts)
+
+
 class SummarizeTranslateInput(BaseModel):
     text: str = Field(..., description="The text to summarize.")
     max_sentences: int = Field(3, ge=1, le=10, description="Maximum number of sentences in the summary.")
@@ -33,7 +46,7 @@ async def summarize_text(text: str, max_sentences: int, client=Depends(get_mistr
             {"role": "user", "content": text},
         ],
     )
-    return response.choices[0].message.content
+    return _message_text(response.choices[0].message.content)
 
 
 @workflows.activity()
@@ -51,7 +64,7 @@ async def translate_to_english(text: str, client=Depends(get_mistral_client)) ->
             {"role": "user", "content": text},
         ],
     )
-    return response.choices[0].message.content
+    return _message_text(response.choices[0].message.content)
 
 
 @workflows.workflow.define(
