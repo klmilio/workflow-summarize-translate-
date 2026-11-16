@@ -10,6 +10,7 @@ from mistralai.workflows.testing import create_test_worker
 from worker.workflows.summarize_translate import (
     SummarizeTranslateInput,
     SummarizeTranslateWorkflow,
+    _message_text,
     get_mistral_client,
     summarize_text,
     translate_to_english,
@@ -67,6 +68,14 @@ async def test_summarize_then_translate(temporal_env_with_converter, fake_mistra
     assert fake_mistral_client.chat.complete_async.await_count == 2
     translate_call = fake_mistral_client.chat.complete_async.await_args_list[1]
     assert translate_call.kwargs["messages"][-1]["content"] == "Περίληψη στα ελληνικά."
+
+
+def test_message_text_extraction():
+    assert _message_text("plain string") == "plain string"
+    assert (
+        _message_text([{"type": "thinking", "thinking": {"text": "skip"}}, {"type": "text", "text": "Hello. "}, {"type": "text", "text": "World."}])
+        == "Hello. World."
+    )
 
 
 def test_max_sentences_validation():
